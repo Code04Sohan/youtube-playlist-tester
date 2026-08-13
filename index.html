@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Playlist Embed Tester</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glow-button {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+            transition: all 0.3s ease;
+        }
+        .glow-button:hover {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
+        }
+    </style>
+</head>
+<div class="min-h-screen flex flex-col justify-between p-4 sm:p-8">
+
+    <!-- Top Header -->
+    <header class="max-w-3xl mx-auto w-full text-center my-6">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200">
+            <i class="fa-brands fa-youtube text-red-500 mr-2"></i>Playlist Embed Tester
+        </h1>
+        <p class="text-gray-400 text-sm sm:text-base mt-2">
+            Test any YouTube or YouTube Music playlist ID to check live web embedding permissions (Error 150/101 check).
+        </p>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-3xl mx-auto w-full space-y-6">
+
+        <!-- Input Section -->
+        <div class="glass-card rounded-2xl p-6 shadow-2xl">
+            <label for="playlist-input" class="block text-sm font-medium text-gray-300 mb-2">
+                Enter Playlist ID or Full YouTube URL:
+            </label>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <input type="text" id="playlist-input" 
+                        placeholder="e.g. PLq-bT4s33RYADNkcClDkLPovaKJx0HTDM or full URL" 
+                        class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm">
+                </div>
+                <button onclick="handleLoadPlaylist()" 
+                    class="glow-button bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer">
+                    <i class="fa-solid fa-play"></i> Test & Play
+                </button>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs text-gray-400">
+                <span>Clean Parsed ID:</span>
+                <span id="parsed-id-badge" class="font-mono text-amber-400 font-semibold">None</span>
+            </div>
+        </div>
+
+        <!-- Status & Alert Banner -->
+        <div id="status-card" class="hidden glass-card rounded-xl p-4 border-l-4 transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <i id="status-icon" class="text-xl"></i>
+                <div>
+                    <h3 id="status-title" class="font-bold text-sm"></h3>
+                    <p id="status-desc" class="text-xs mt-0.5 text-gray-300"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden YouTube API Embed Container -->
+        <div class="hidden">
+            <div id="yt-embed-player"></div>
+        </div>
+
+        <!-- Interactive Player Controls Card -->
+        <div class="glass-card rounded-2xl p-6 shadow-2xl space-y-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                        <i class="fa-solid fa-music text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 id="now-playing-title" class="font-bold text-white text-base">No Playlist Loaded</h2>
+                        <p id="now-playing-sub" class="text-xs text-gray-400">Enter a playlist ID above to start testing.</p>
+                    </div>
+                </div>
+                <span id="player-state-badge" class="bg-gray-800 text-gray-400 text-xs px-3 py-1 rounded-full font-mono border border-gray-700">
+                    IDLE
+                </span>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center justify-center gap-6 pt-2">
+                <button onclick="prevTrack()" class="text-gray-400 hover:text-white text-xl transition-colors p-2">
+                    <i class="fa-solid fa-backward-step"></i>
+                </button>
+                <button id="toggle-play-btn" onclick="togglePlayPause()" class="w-14 h-14 bg-amber-400 text-gray-950 rounded-full flex items-center justify-center text-xl font-bold shadow-lg hover:scale-105 transition-all">
+                    <i id="play-icon" class="fa-solid fa-play"></i>
+                </button>
+                <button onclick="nextTrack()" class="text-gray-400 hover:text-white text-xl transition-colors p-2">
+                    <i class="fa-solid fa-forward-step"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Developer Footer Signature -->
+    <footer class="max-w-3xl mx-auto w-full text-center mt-12 pt-6 border-t border-gray-800 text-sm text-gray-400">
+        <p>
+            Designed & Developed by 
+            <a href="https://sohan-web-systems.pages.dev/" target="_blank" rel="noopener noreferrer" class="font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-4 transition-colors">
+                Sohan Adhikari
+            </a>
+        </p>
+        <p class="text-xs text-gray-500 mt-1">
+            Portfolio: <a href="https://sohan-web-systems.pages.dev/" target="_blank" rel="noopener noreferrer" class="hover:underline">sohan-web-systems.pages.dev</a>
+        </p>
+    </footer>
+
+</div>
+
+<!-- YouTube IFrame API Script -->
+<script>
+    let player = null;
+    let isApiReady = false;
+    let currentPlaylistId = "";
+
+    // 1. Extract clean playlist ID from input (strips URLs, &si= tracking, etc.)
+    function parsePlaylistId(input) {
+        if (!input) return "";
+        input = input.trim();
+
+        // Match list= parameter in full URLs
+        const listMatch = input.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+        if (listMatch && listMatch[1]) {
+            return listMatch[1];
+        }
+
+        // Clean raw string input (removes trailing &si=... or extra parameters)
+        return input.split('&')[0].replace(/[^a-zA-Z0-9_-]/g, '');
+    }
+
+    // 2. Load YouTube API Async
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    function onYouTubeIframeAPIReady() {
+        isApiReady = true;
+    }
+
+    // 3. Main Playlist Loader
+    function handleLoadPlaylist() {
+        const rawInput = document.getElementById('playlist-input').value;
+        const cleanId = parsePlaylistId(rawInput);
+
+        if (!cleanId) {
+            updateStatus("error", "Invalid Input", "Please enter a valid YouTube Playlist ID or URL.");
+            return;
+        }
+
+        currentPlaylistId = cleanId;
+        document.getElementById('parsed-id-badge').innerText = cleanId;
+        updateStatus("loading", "Loading Playlist...", `Querying YouTube Iframe API for ID: ${cleanId}`);
+
+        if (player) {
+            player.loadPlaylist({
+                listType: 'playlist',
+                list: cleanId,
+                index: 0
+            });
+        } else if (isApiReady) {
+            player = new YT.Player('yt-embed-player', {
+                height: '0',
+                width: '0',
+                playerVars: {
+                    listType: 'playlist',
+                    list: cleanId,
+                    autoplay: 1,
+                    origin: window.location.origin
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
+                }
+            });
+        } else {
+            updateStatus("error", "API Not Ready", "YouTube API is still initializing. Please wait a moment.");
+        }
+    }
+
+    // 4. API Event Callbacks
+    function onPlayerReady(event) {
+        event.target.playVideo();
+    }
+
+    function onPlayerStateChange(event) {
+        const stateBadge = document.getElementById('player-state-badge');
+        const playIcon = document.getElementById('play-icon');
+
+        if (event.data === YT.PlayerState.PLAYING) {
+            stateBadge.innerText = "PLAYING";
+            stateBadge.className = "bg-emerald-950 text-emerald-400 text-xs px-3 py-1 rounded-full font-mono border border-emerald-800";
+            playIcon.className = "fa-solid fa-pause";
+            
+            const videoData = player.getVideoData();
+            document.getElementById('now-playing-title').innerText = videoData.title || "Playing Playlist Track";
+            document.getElementById('now-playing-sub').innerText = `Author: ${videoData.author || 'Unknown'}`;
+            
+            updateStatus("success", "Playlist Streamable!", "This playlist permits third-party website embedding.");
+        } else if (event.data === YT.PlayerState.PAUSED) {
+            stateBadge.innerText = "PAUSED";
+            stateBadge.className = "bg-amber-950 text-amber-400 text-xs px-3 py-1 rounded-full font-mono border border-amber-800";
+            playIcon.className = "fa-solid fa-play";
+        } else if (event.data === YT.PlayerState.BUFFERING) {
+            stateBadge.innerText = "BUFFERING";
+            stateBadge.className = "bg-blue-950 text-blue-400 text-xs px-3 py-1 rounded-full font-mono border border-blue-800";
+        }
+    }
+
+    // 5. Catch Blocked / Error 150/101 Playlists
+    function onPlayerError(event) {
+        const errorCode = event.data;
+        const playIcon = document.getElementById('play-icon');
+        playIcon.className = "fa-solid fa-play";
+
+        if (errorCode === 101 || errorCode === 150) {
+            updateStatus("error", "Error 150/101: Embedding Restricted", "The copyright owner or record label of tracks in this playlist has disabled playback on third-party websites.");
+        } else if (errorCode === 2) {
+            updateStatus("error", "Error 2: Invalid Parameter", "The playlist ID provided is invalid or contains malformed syntax.");
+        } else if (errorCode === 5) {
+            updateStatus("error", "Error 5: HTML5 Player Error", "An HTML5 player rendering error occurred.");
+        } else {
+            updateStatus("error", `Error Code ${errorCode}`, "Failed to load or stream this playlist.");
+        }
+    }
+
+    // 6. UI Status Helpers
+    function updateStatus(type, title, desc) {
+        const card = document.getElementById('status-card');
+        const icon = document.getElementById('status-icon');
+        const titleEl = document.getElementById('status-title');
+        const descEl = document.getElementById('status-desc');
+
+        card.classList.remove('hidden', 'border-emerald-500', 'border-red-500', 'border-amber-500');
+
+        if (type === 'success') {
+            card.classList.add('border-emerald-500');
+            icon.className = "fa-solid fa-circle-check text-emerald-400 text-xl";
+        } else if (type === 'error') {
+            card.classList.add('border-red-500');
+            icon.className = "fa-solid fa-circle-xmark text-red-400 text-xl";
+        } else {
+            card.classList.add('border-amber-500');
+            icon.className = "fa-solid fa-spinner fa-spin text-amber-400 text-xl";
+        }
+
+        titleEl.innerText = title;
+        descEl.innerText = desc;
+    }
+
+    // 7. Playback Button Actions
+    function togglePlayPause() {
+        if (!player) return;
+        const state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+            player.pauseVideo();
+        } else {
+            player.playVideo();
+        }
+    }
+
+    function nextTrack() {
+        if (player && player.nextVideo) player.nextVideo();
+    }
+
+    function prevTrack() {
+        if (player && player.previousVideo) player.previousVideo();
+    }
+</script>
+</html>
